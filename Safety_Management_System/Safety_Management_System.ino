@@ -25,23 +25,31 @@ Ambient ambient;
  
 const char* ssid = "zero2";
 const char* password = "0548872871";
-const char* smtp_username = "atuya.god";
+
+//送信元のgmailID
+const char* smtp_username = "atuya.god"; 
+//送信元のgmailPW
 const char* smtp_password = "1919atuya";
+//送信元のgmailアドレス
 const char* smtp_from_address = "atuya.god@gmail.com";
 const int smtp_port = 465;
 const char* smtp_hostname = "smtp.gmail.com";
-
+//送信先のメールアドレス
 const char* to_address = "zero2despair@gmail.com";
+//メールタイトル
 const char* subject = "温湿度情報";
 const char* subject1 = "消費カロリー情報";
 
 const int temperature_upper_limit = 31;
-const int temperature_upper_1 = 28;
-const int temperature_upper_2 = 25;
+const int temperature_upper_1 = 25;
 const int temperature_lower_limit = 15;
-const int minimum_email_interval_seconds = 60*20;   //20 minutes
-const int cal_email_interval_seconds = 60*60;   //60 minutes
-const int sensing_interval_milliseconds = 5000;       //should be more than 1500
+//30 minutes
+const int minimum_email_interval_seconds = 60*30;
+//60 minutes   
+const int cal_email_interval_seconds = 60*60; 
+
+//should be more than 1500
+const int sensing_interval_milliseconds = 5000;      
 
 unsigned int channelId = 16017; // AmbientのチャネルID
 unsigned int t=0;
@@ -105,6 +113,7 @@ Wire.begin();
   Tokyo.setLocation("Asia/Tokyo");
   Serial.println("Asia/Tokyo time: " + Tokyo.dateTime());
   last_emailed_at = Tokyo.now();
+  last_emailed_at1 = Tokyo.now();
   
 
 //  M5.Lcd.println(WiFi.localIP());
@@ -144,19 +153,17 @@ M5.Lcd.setTextSize(1);
   M5.Lcd.drawString(" ",220,170);
   M5.Lcd.setTextSize(2);
   temp=dht12.readTemperature();
-  //M5.Lcd.drawFloat(temp,-1,220,170);
   M5.Lcd.setCursor(220, 170);
   M5.Lcd.println  ((int)temp);
   M5.Lcd.setCursor(240, 170);
   M5.Lcd.print(" *C ");
-  //M5.Lcd.print(" C ");
-  //Read humidity.
+
 
   M5.Lcd.setCursor(220, 190);
   humid=dht12.readHumidity();
   M5.Lcd.println((int)humid);
   M5.Lcd.setCursor(240, 190);
-  M5.Lcd.println(" H");
+  M5.Lcd.println(" %");
   M5.Lcd.setTextSize(1);
 
 
@@ -167,19 +174,28 @@ M5.Lcd.setTextSize(1);
   email_content += temp;
   email_content += "℃、湿度: ";
   email_content += humid;
-  email_content += "％です。\n";
+  email_content += "％です。 <br> ";
   Serial.println(email_content);
 
   log_d("経過時間：%.1f秒", elapsed_seconds);
   if (elapsed_seconds > minimum_email_interval_seconds) {
-    if (temp > temperature_upper_limit) {
-      send_email(email_content + "非常に危険な気温です！！この気温下での運動はお薦め出来ません。どうしても運動したい場合は、こまめな水分補給を絶対に忘れないでください。水分・塩分補給の目安は10分に一度です。また自分の運動のメニューが済み次第、速やかに家に帰りましょう。");
+    if (temp > temperature_upper_limit) {  
+    send("温度:" + String(temp)+ "℃、湿度:" + String(humid) + "％です。 \n " + "非常に危険な気温です！！この気温下での運動はお薦め出来ません。 \n どうしても運動したい場合は、こまめな水分補給を絶対に忘れないでください。 \n 水分・塩分補給の目安は10分に一度です。 \n また自分の運動のメニューが済み次第、速やかに家に帰りましょう。");  //LINE内容
+      email_content += "非常に危険な気温です！！この気温下での運動はお薦め出来ません。 <br> ";
+      email_content += "どうしても運動したい場合は、こまめな水分補給を絶対に忘れないでください。 <br> ";
+      email_content += "水分・塩分補給の目安は10分に一度です。 <br> ";
+      send_email(email_content += "また自分の運動のメニューが済み次第、速やかに家に帰りましょう。 <br> ");
     } else if (temp > temperature_upper_1) {
-      send_email(email_content + "危険な気温です。熱中症になる危険が高いです。運動する場合は、こまめな水分を忘れないでください。水分・塩分補給の目安は10分～20分に一度です。");
-    } else if (temp > temperature_upper_2) {
-      send_email(email_content + "熱中症になる危険が高い気温です。積極的に日陰で休憩を取りましょう。ジョギングや球技といった激しい運動は、30分に一度休憩を取って体を休めましょう。また小さなお子さんは、地表熱からの熱の影響をとても受けやすく、熱中症になりやすいです。もし一緒に運動している場合は、顔色をよく見てあげましょう。");
+      send("温度:" + String(temp)+ "℃、湿度:" + String(humid) + "％です。 \n " + "危険な気温です。熱中症になる危険が高いです。積極的に日陰で休憩を取りましょう。\n ジョギングや球技といった激しい運動は、30分に一度休憩を取って体を休めましょう。 \n 運動する場合は、こまめな水分を忘れないでください。 \n また小さなお子さんは、地表熱からの熱の影響をとても受けやすく、熱中症になりやすいです。もし一緒に運動している場合は、顔色をよく見てあげましょう。");
+      email_content +="危険な気温です。熱中症になる危険が高いです。積極的に日陰で休憩を取りましょう。 <br> ";
+      email_content +="ジョギングや球技といった激しい運動は、30分に一度休憩を取って体を休めましょう。 <br> ";
+      email_content +="運動する場合は、こまめな水分を忘れないでください。 <br> ";      
+      email_content +="また小さなお子さんは、地表熱からの熱の影響をとても受けやすく、熱中症になりやすいです。もし一緒に運動している場合は、顔色をよく見てあげましょう。 <br> ";      
+      send_email(email_content +="水分・塩分補給の目安は10分～20分に一度です。 <br> ");         
     } else if (temp < temperature_lower_limit) {
-      send_email(email_content + "今日は少し寒い日です。運動をする場合はしっかりとストレッチをしてから運動することをお薦めします。動きながらストレッチを行う、ダイナミックストレッチが筋肉に効きます。また寒い日の運動はチャンスです。運動を行い基礎代謝を高めて、冷えやすい体質を改善出来ますし、冬はエネルギー消費量も増えるのでダイエットにも効果的です。");
+      send("温度:" + String(temp)+ "℃、湿度:" + String(humid) + "％です。 \n " + "寒い日です。運動をする場合はしっかりとストレッチをしてから運動することをお薦めします。動きながらストレッチを行う、ダイナミックストレッチが筋肉に効きます。 \n また寒い日の運動はチャンスです。運動を行い基礎代謝を高めて、冷えやすい体質を改善出来ますし、冬はエネルギー消費量も増えるのでダイエットにも効果的です。 ");
+      email_content +="寒い日です。運動をする場合はしっかりとストレッチをしてから運動することをお薦めします。動きながらストレッチを行う、ダイナミックストレッチが筋肉に効きます。 <br> ";  
+      send_email(email_content +="また寒い日の運動はチャンスです。運動を行い基礎代謝を高めて、冷えやすい体質を改善出来ますし、冬はエネルギー消費量も増えるのでダイエットにも効果的です。 <br> "); 
     }
   }
 
@@ -188,29 +204,32 @@ M5.Lcd.setTextSize(1);
 
   String email1_content = "現在：";
   email1_content += zikan;
-  email1_content += "時間運動をしています。";
-    email1_content += "消費カロリーは、約：";
+  email1_content += "時間運動をしています。 <br> ";
+    email1_content += "消費カロリーは、約： ";
   Serial.println(email1_content);
 
   log_d("経過時間：%.1f秒", cal_seconds);
   if (cal_seconds > cal_email_interval_seconds) {
+ 
       
       karo=zikan*150;
       email1_content += karo;
-      zikan += 1;
+      send("現在：" + String(zikan) + "時間運動しています。\n" + "消費カロリーは、約：" + String(karo) +"kcalです。");
+       zikan += 1;
       send_email1(email1_content += "kcalです。");
-    }
-  
+   }
+
   // DHT11 sampling rate is 1HZ.
   //delay(sensing_interval_milliseconds);
   //500が約１分
   if(f==500 * 1){
+      //d1に温度
       ambient.set(1,String(temp).c_str());
+      //d2に湿度
       ambient.set(2,String(humid).c_str());
+      //d3に心拍数
       ambient.set(3, pulseSensor.getBeatsPerMinute()-3);
       ambient.send();
-      //M5.Lcd.println("Data sended to Ambient");
-      //M5.Lcd.printf("%d\n",t);
       f=0;
   }
   
@@ -228,7 +247,7 @@ M5.Lcd.setTextSize(1);
   //M5.Lcd.clear();
 
   
-    //delay(1);
+
     if (M5.BtnA.wasPressed()) {
         drawTodayWeather(); 
     }
@@ -371,7 +390,7 @@ void drawTemperature(String maxTemperature, String minTemperature) {
 }
 
 void drawRainfallChancce(String rfc0_6, String rfc6_12, String rfc12_18, String rfc18_24) {
-    M5.Lcd.setTextSize(2);  //下のアレ
+    M5.Lcd.setTextSize(2);  
     M5.Lcd.setTextColor(WHITE);
     M5.Lcd.setCursor(145,110);
     M5.Lcd.print(rfc0_6);
@@ -388,7 +407,39 @@ void drawRainfallChancce(String rfc0_6, String rfc6_12, String rfc12_18, String 
 
 void drawDate(String date) {
     M5.Lcd.setTextColor(WHITE);
-    M5.Lcd.setTextSize(1);    //さわるな
+    M5.Lcd.setTextSize(1);    
     M5.Lcd.setCursor(150,10);
     M5.Lcd.print(date);
+}
+
+void send(String message) {
+  const char* host = "notify-api.line.me";
+  const char* token = "Oqu5d9bzNZgYTrXTIgaUWvFQwx3wtW5JrlHbaapOuRZ";
+  WiFiClientSecure client;
+  Serial.println("Try");
+  //LineのAPIサーバに接続
+  if (!client.connect(host, 443)) {
+    Serial.println("Connection failed");
+    return;
+  }
+  Serial.println("Connected");
+  //リクエストを送信
+  String query = String("message=") + message;
+  String request = String("") +
+               "POST /api/notify HTTP/1.1\r\n" +
+               "Host: " + host + "\r\n" +
+               "Authorization: Bearer " + token + "\r\n" +
+               "Content-Length: " + String(query.length()) +  "\r\n" + 
+               "Content-Type: application/x-www-form-urlencoded\r\n\r\n" +
+                query + "\r\n";
+  client.print(request);
+
+  //受信終了まで待つ 
+  while (client.connected()) {
+    String line = client.readStringUntil('\n');
+    Serial.println(line);
+    if (line == "\r") {
+      break;
+    }
+  }
 }
